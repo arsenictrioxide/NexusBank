@@ -6,9 +6,27 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    
+    # If using Nginx Proxy Manager (NPM), keep ports and point NPM to your VPS IP:8080
     ports:
-      # Maps your machine's port 8080 to the Nginx internal port 80
       - "8080:80"
+      
+    # If you use jwilder/nginx-proxy, comment out 'ports' above, uncomment 'expose' below:
+    # expose:
+    #   - "80"
+      
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+      # Uncomment and configure these if using jwilder/nginx-proxy + Let's Encrypt
+      # - VIRTUAL_HOST=nexus.progdevminds.com,progdevminds.com
+      # - LETSENCRYPT_HOST=nexus.progdevminds.com,progdevminds.com
+      
+    # Uncomment if your reverse proxy is on a custom external Docker network
+    # networks:
+    #  - default
+    #  - your_proxy_network
+
+# networks:
+#   your_proxy_network:
+#     external: true

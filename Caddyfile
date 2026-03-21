@@ -1,0 +1,3 @@
+progdevminds.com, nexus.progdevminds.com {
+    reverse_proxy nexus-banking-app:80
+}

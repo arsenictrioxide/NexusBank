@@ -52,7 +52,8 @@ async function setupDatabase() {
             email TEXT UNIQUE,
             password TEXT,
             balance REAL DEFAULT 0,
-            status TEXT DEFAULT 'active'
+            status TEXT DEFAULT 'active',
+            full_name TEXT
         );
         
         CREATE TABLE IF NOT EXISTS visits (
@@ -65,6 +66,8 @@ async function setupDatabase() {
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    
+    try { await db.exec('ALTER TABLE users ADD COLUMN full_name TEXT'); } catch(e) {}
     
     // Create admin if not exists
     const admin = await db.get('SELECT * FROM users WHERE email = ?', ['admin@nexus.com']);
@@ -102,12 +105,13 @@ I am tracking all visits and logins.
         bot.sendMessage(msg.chat.id, text, { parse_mode: "Markdown" });
     });
 
-    bot.onText(/\/adduser (.+) (.+) (.+)/, async (msg, match) => {
+    bot.onText(/\/adduser ([^\s]+) ([^\s]+) ([^\s]+) (.+)?/, async (msg, match) => {
         if (adminChatId && msg.chat.id.toString() !== adminChatId) return;
-        const [_, email, password, balance] = match;
+        const [_, email, password, balance, fullName] = match;
+        const name = fullName || 'User';
         try {
-            await db.run('INSERT INTO users (email, password, balance) VALUES (?, ?, ?)', [email, password, parseFloat(balance)]);
-            bot.sendMessage(msg.chat.id, `✅ User *${email}* created with $${balance}`, { parse_mode: "Markdown" });
+            await db.run('INSERT INTO users (email, password, balance, full_name) VALUES (?, ?, ?, ?)', [email, password, parseFloat(balance), name]);
+            bot.sendMessage(msg.chat.id, `✅ User *${name}* (${email}) created with $${balance}`, { parse_mode: "Markdown" });
         } catch (e) {
             bot.sendMessage(msg.chat.id, `❌ Error: ${e.message}`);
         }
@@ -182,7 +186,7 @@ app.post('/api/login', async (req, res) => {
     if (user) {
         if (user.status !== 'active') return res.status(401).json({ error: 'Account frozen' });
         const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET);
-        res.json({ token, user: { id: user.id, email: user.email, balance: user.balance } });
+        res.json({ token, user: { id: user.id, email: user.email, balance: user.balance, full_name: user.full_name } });
         
         if (bot && adminChatId) {
             bot.sendMessage(adminChatId, `🔐 *User Logged In*\nEmail: ${email}\nIP: ${req.clientIp}`, { parse_mode: "Markdown" });

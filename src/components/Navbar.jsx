@@ -2,6 +2,10 @@ import { Bell, Search, User } from 'lucide-react';
 import './Navbar.css';
 
 const Navbar = () => {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const displayName = user?.full_name || user?.email || 'Bank User';
+
   return (
     <header className="navbar">
       <div className="nav-search">
@@ -20,7 +24,7 @@ const Navbar = () => {
             <User size={20} />
           </div>
           <div className="user-info">
-            <span className="user-name">Alex Morgan</span>
+            <span className="user-name">{displayName}</span>
             <span className="user-type">Premium</span>
           </div>
         </div>

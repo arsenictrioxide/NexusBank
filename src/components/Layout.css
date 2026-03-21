@@ -35,3 +35,15 @@
   z-index: 0;
   pointer-events: none;
 }
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+  .main-wrapper {
+    padding-bottom: 60px;
+  }
+  .content {
+    padding: 1rem;
+  }
+}

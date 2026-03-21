@@ -20,11 +20,15 @@ const transactions = [
 ];
 
 const Dashboard = () => {
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const firstName = user?.full_name ? user.full_name.split(' ')[0] : (user?.email?.split('@')[0] || 'User');
+
   return (
     <div className="dashboard">
       <header className="dashboard-header animate-fade-in">
         <div>
-          <h1 className="text-gradient">Welcome back, Alex</h1>
+          <h1 className="text-gradient">Welcome back, {firstName}</h1>
           <p className="text-muted">Here is your financial overview for this month.</p>
         </div>
         <button className="btn-primary">

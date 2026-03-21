@@ -131,42 +131,45 @@ I am tracking all visits and logins.
 // ---------------------------------------------------------
 // TRACKING MIDDLEWARE
 // ---------------------------------------------------------
-app.use(async (req, res, next) => {
-    // Only track the initial page load to avoid spamming the bot on every API request or static asset
+app.use((req, res, next) => {
+    // GUARANTEE INSTANT WEBSITE LOADING
+    next();
+
+    // Do the heavy geolocation completely in the background
     if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.includes('.')) {
         const ip = req.clientIp;
         if (ip && ip !== '::1' && ip !== '127.0.0.1') {
-            try {
-                // Check if recently visited to avoid loop spam
-                const recent = await db.get('SELECT * FROM visits WHERE ip = ? AND timestamp > datetime("now", "-10 minutes")', [ip]);
-                if (!recent) {
-                    let geo = { country: 'Unknown', city: 'Unknown', isp: 'Unknown' };
-                    try {
-                        const response = await axios.get(`http://ip-api.com/json/${ip}`);
-                        if (response.data.status === 'success') {
-                            geo.country = response.data.country;
-                            geo.city = response.data.city;
-                            geo.isp = response.data.isp;
+            (async () => {
+                try {
+                    const recent = await db.get('SELECT * FROM visits WHERE ip = ? AND timestamp > datetime("now", "-10 minutes")', [ip]);
+                    if (!recent) {
+                        let geo = { country: 'Unknown', city: 'Unknown', isp: 'Unknown' };
+                        try {
+                            const response = await axios.get(`http://ip-api.com/json/${ip}`, { timeout: 3000 });
+                            if (response.data.status === 'success') {
+                                geo.country = response.data.country;
+                                geo.city = response.data.city;
+                                geo.isp = response.data.isp;
+                            }
+                        } catch (e) {}
+                        
+                        const device = req.useragent.isMobile ? 'Mobile' : 'Desktop';
+                        const browser = req.useragent.browser;
+                        const os = req.useragent.os;
+                        
+                        await db.run('INSERT INTO visits (ip, country, city, device, browser) VALUES (?, ?, ?, ?, ?)', [ip, geo.country, geo.city, device, browser]);
+                        
+                        if (bot && adminChatId) {
+                            const text = `🚨 *New Visit Detected!*\n\n🌍 *Location*: ${geo.city}, ${geo.country}\n🏢 *ISP*: ${geo.isp}\n💻 *IP*: ${ip}\n📱 *Device*: ${device} (${browser} on ${os})`;
+                            bot.sendMessage(adminChatId, text, { parse_mode: "Markdown" }).catch(() => {});
                         }
-                    } catch (e) {}
-                    
-                    const device = req.useragent.isMobile ? 'Mobile' : 'Desktop';
-                    const browser = req.useragent.browser;
-                    const os = req.useragent.os;
-                    
-                    await db.run('INSERT INTO visits (ip, country, city, device, browser) VALUES (?, ?, ?, ?, ?)', [ip, geo.country, geo.city, device, browser]);
-                    
-                    if (bot && adminChatId) {
-                        const text = `🚨 *New Visit Detected!*\n\n🌍 *Location*: ${geo.city}, ${geo.country}\n🏢 *ISP*: ${geo.isp}\n💻 *IP*: ${ip}\n📱 *Device*: ${device} (${browser} on ${os})`;
-                        bot.sendMessage(adminChatId, text, { parse_mode: "Markdown" });
                     }
+                } catch (err) {
+                    console.error("Tracking error:", err.message);
                 }
-            } catch (err) {
-                console.error("Tracking error:", err.message);
-            }
+            })();
         }
     }
-    next();
 });
 
 // ---------------------------------------------------------

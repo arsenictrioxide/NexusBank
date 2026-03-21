@@ -1,14 +1,40 @@
+import { useState } from 'react';
 import { Lock, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('admin@nexus.com');
+  const [password, setPassword] = useState('admin123');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate auth
-    navigate('/');
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Login failed');
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // Force reload to update Layout state cleanly
+      window.location.href = '/';
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,6 +52,7 @@ const Login = () => {
           </div>
           <h2>Nexus Bank</h2>
           <p className="text-muted">Welcome back. Please login to your account.</p>
+          {error && <div style={{color: '#ef4444', marginTop: '10px', fontSize: '0.9rem', textAlign: 'center'}}>{error}</div>}
         </div>
 
         <form className="login-form" onSubmit={handleLogin}>
@@ -33,7 +60,7 @@ const Login = () => {
             <label>Email Address</label>
             <div className="input-with-icon">
               <Mail size={18} className="input-icon" />
-              <input type="email" required className="form-input" placeholder="Enter your email" defaultValue="alex@example.com" />
+              <input type="email" required className="form-input" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
           </div>
 
@@ -44,12 +71,12 @@ const Login = () => {
             </div>
             <div className="input-with-icon">
               <Lock size={18} className="input-icon" />
-              <input type="password" required className="form-input" placeholder="Enter your password" defaultValue="password" />
+              <input type="password" required className="form-input" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           </div>
 
-          <button type="submit" className="btn-primary w-full mt-6 justify-center">
-            Sign In
+          <button type="submit" className="btn-primary w-full mt-6 justify-center" disabled={loading}>
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 

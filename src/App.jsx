@@ -10,8 +10,8 @@ import Admin from "./pages/Admin";
 import "./App.css";
 
 function App() {
-  // In a real app we would have actual auth state here
-  const isAuthenticated = true;
+  // Hook the auth state to real JWT presence internally
+  const isAuthenticated = !!localStorage.getItem('token');
 
   return (
     <BrowserRouter>

@@ -37,9 +37,27 @@ const getBankByRouting = (routingStr) => {
 };
 
 const Transfers = () => {
+  const [balance, setBalance] = useState(JSON.parse(localStorage.getItem('user') || '{}')?.balance || 0);
   const [transferType, setTransferType] = useState('internal');
   const [routingNumber, setRoutingNumber] = useState('');
   const [bankName, setBankName] = useState('');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch('/api/user', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBalance(data.balance);
+        }
+      } catch (err) {}
+    };
+    fetchUserData();
+  }, []);
   
   // Real-time routing lookup
   useEffect(() => {
@@ -86,7 +104,7 @@ const Transfers = () => {
             <div className="form-group">
               <label>From Account</label>
               <select className="form-input">
-                <option>Everyday Checking (**** 4598) - $8,450.00</option>
+                <option>Everyday Checking (**** 4598) - {balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</option>
                 <option>High Yield Savings (**** 8821) - $15,200.50</option>
               </select>
             </div>

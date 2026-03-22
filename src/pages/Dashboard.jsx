@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { ArrowUpRight, ArrowDownRight, Wallet, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import './Dashboard.css';
@@ -24,6 +25,29 @@ const Dashboard = () => {
   const user = userStr ? JSON.parse(userStr) : null;
   const firstName = user?.full_name ? user.full_name.split(' ')[0] : (user?.email?.split('@')[0] || 'User');
 
+  const [balance, setBalance] = useState(user?.balance || 0);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch('/api/user', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBalance(data.balance);
+          if (user) {
+              const updatedUser = { ...user, balance: data.balance };
+              localStorage.setItem('user', JSON.stringify(updatedUser));
+          }
+        }
+      } catch (err) {}
+    };
+    fetchUserData();
+  }, []);
+
   return (
     <div className="dashboard">
       <header className="dashboard-header animate-fade-in">
@@ -44,7 +68,7 @@ const Dashboard = () => {
           </div>
           <div className="card-info">
             <p className="card-label">Total Balance</p>
-            <h2 className="card-value">$24,562.00</h2>
+            <h2 className="card-value">{balance.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</h2>
             <p className="card-trend positive">+2.4% from last month</p>
           </div>
         </div>

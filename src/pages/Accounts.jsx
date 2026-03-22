@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Plus, MoreHorizontal, ArrowUpRight, ArrowDownRight, CreditCard } from 'lucide-react';
 import './Accounts.css';
 
@@ -14,6 +15,31 @@ const statementData = [
 ];
 
 const Accounts = () => {
+  const [balance, setBalance] = useState(JSON.parse(localStorage.getItem('user') || '{}')?.balance || 0);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await fetch('/api/user', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBalance(data.balance);
+        }
+      } catch (err) {}
+    };
+    fetchUserData();
+  }, []);
+
+  const dynamicAccounts = [
+    { id: 1, type: 'Checking', name: 'Everyday Checking', balance: balance, number: '**** **** **** 4598', trend: '+1.2%' },
+    { id: 2, type: 'Savings', name: 'High Yield Savings', balance: 15200.50, number: '**** **** **** 8821', trend: '+5.0%' },
+    { id: 3, type: 'Credit', name: 'Platinum Rewards Card', balance: -910.20, number: '**** **** **** 1029', limit: 10000 },
+  ];
+
   return (
     <div className="accounts-page">
       <header className="page-header animate-fade-in">
@@ -28,7 +54,7 @@ const Accounts = () => {
       </header>
 
       <div className="accounts-grid animate-fade-in" style={{ animationDelay: '0.1s' }}>
-        {accountsList.map((acc) => (
+        {dynamicAccounts.map((acc) => (
           <div key={acc.id} className="account-card glass-panel">
             <div className="acc-header">
               <div className="acc-icon">
